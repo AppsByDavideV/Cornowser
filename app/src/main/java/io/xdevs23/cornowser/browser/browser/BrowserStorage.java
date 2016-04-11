@@ -5,8 +5,10 @@ import android.content.SharedPreferences;
 
 import org.xdevs23.config.ConfigUtils;
 import org.xdevs23.debugutils.Logging;
+import org.xdevs23.debugutils.StackTraceParser;
 import org.xdevs23.management.config.SharedPreferenceArray;
 
+import io.xdevs23.cornowser.browser.browser.modules.adblock.AdBlockConst;
 import io.xdevs23.cornowser.browser.browser.modules.ui.RenderColorMode;
 
 public class BrowserStorage {
@@ -18,7 +20,8 @@ public class BrowserStorage {
             ;
 
     private String[]
-                lastSession
+                lastSession,
+                adBlockWhitelist
             ;
 
     private boolean
@@ -28,7 +31,9 @@ public class BrowserStorage {
                 omniColoringEnabled,
                 adBlockEnabled,
                 saveLastSession,
-                crashlyticsOptOut
+                crashlyticsOptOut,
+                adBlockNetBehavior,
+                waitForAdBlock
             ;
 
     private RenderColorMode.ColorMode renderingColorMode;
@@ -64,6 +69,10 @@ public class BrowserStorage {
                 "")));
         setSaveBrowsingSession(getPref(BPrefKeys.saveLastSessionPref, false));
         setCrashlyticsOptedOut(getPref(BPrefKeys.crashltcOptOutPref, false));
+        setAdBlockNetBehavior(getPref(BPrefKeys.adBlockNetBehavPref, AdBlockConst.NET_BEHAVIOR_WIFI));
+        setWaitForAdBlock(getPref(BPrefKeys.adBlockWaitForPref, false));
+        setAdBlockWhitelist(SharedPreferenceArray.getStringArray(
+                getPref(BPrefKeys.adBlockWhitelstPref, "")));
     }
 
     //endregion
@@ -262,6 +271,118 @@ public class BrowserStorage {
 
     // endregion
 
+    // region AdBlock Network Behavior
+
+    public void setAdBlockNetBehavior(boolean behavior) {
+        adBlockNetBehavior = behavior;
+    }
+
+    public void saveAdBlockNetBehavior(boolean behavior) {
+        setAdBlockNetBehavior(behavior);
+        setPref(BPrefKeys.adBlockNetBehavPref, behavior);
+    }
+
+    public boolean getAdBlockNetBehavior() {
+        return adBlockNetBehavior;
+    }
+
+    // endregion
+
+    // region Wait for AdBlock
+
+    public void setWaitForAdBlock(boolean waitFor) {
+        waitForAdBlock = waitFor;
+    }
+
+    public void saveWaitForAdBlock(boolean waitFor) {
+        setWaitForAdBlock(waitFor);
+        setPref(BPrefKeys.adBlockWaitForPref, waitFor);
+    }
+
+    public boolean isWaitForAdBlockEnabled() {
+        return waitForAdBlock;
+    }
+
+    // endregion
+
+    // region AdBlock whitelist
+
+    public void setAdBlockWhitelist(String[] whitelist) {
+        adBlockWhitelist = whitelist;
+    }
+
+    public String[] addDomainToAdBlockWhitelist(String domain) {
+        Logging.logd("Add domain to adblock whitelist");
+        String[] newList = new String[adBlockWhitelist == null ? 1 : adBlockWhitelist.length + 1];
+        if(adBlockWhitelist != null && adBlockWhitelist.length >= 1){
+            System.arraycopy(adBlockWhitelist, 0, newList, 0, adBlockWhitelist.length);
+            newList[newList.length - 1] = domain;
+        } else newList[0] = domain;
+        return newList;
+    }
+
+
+    public String[] removeDomainFromAdBlockWhitelist(String domain) {
+        Logging.logd("Remove domain from adblock whitelist");
+        try {
+            Logging.logd("  Checking...");
+            String[] newList;
+            if(adBlockWhitelist.length == 1) {
+                Logging.logd("    => Erasing new list (only one domain was left)");
+                newList = null;
+            } else {
+                Logging.logd("    => Searching for domain");
+                newList = new String[adBlockWhitelist.length - 1];
+                int foundOffset = 0;
+                for (int i = 0; i < adBlockWhitelist.length; i++) {
+                    if (adBlockWhitelist[i].contains(domain)) {
+                        foundOffset = 1;
+                        Logging.logd("      -- Domain found");
+                    } else
+                        newList[i - foundOffset] = adBlockWhitelist[i];
+                }
+            }
+            return newList;
+        } catch(Exception ex) {
+            Logging.logd("Removal of domain " + domain + " failed. Printing stack trace.");
+            StackTraceParser.logStackTrace(ex);
+            return adBlockWhitelist;
+        }
+    }
+
+    public void saveAdBlockWhitelist(String[] whitelist) {
+        Logging.logd("Saving adblock whitelist");
+        Logging.logd("  Checking...");
+        if(whitelist == null) {
+            Logging.logd("    => Erasing whitelist");
+            setPref(BPrefKeys.adBlockWhitelstPref, "");
+            setAdBlockWhitelist(null);
+        } else {
+            Logging.logd("    => Saving extended copy with length " + whitelist.length);
+            setAdBlockWhitelist(whitelist);
+            setPref(BPrefKeys.adBlockWhitelstPref,
+                    SharedPreferenceArray.getPreferenceString(whitelist));
+        }
+    }
+
+    public void saveAdBlockWhitelist(String newDomain) {
+        saveAdBlockWhitelist(newDomain, true);
+    }
+
+    public void saveAdBlockWhitelist(String domain, boolean add) {
+        if(add) saveAdBlockWhitelist(addDomainToAdBlockWhitelist(domain));
+        else saveAdBlockWhitelist(removeDomainFromAdBlockWhitelist(domain));
+    }
+
+    public String[] getAdBlockWhitelist() {
+        Logging.logd("Adblock whitelist size: " +
+                (adBlockWhitelist == null ? "null" : adBlockWhitelist.length));
+        return adBlockWhitelist;
+    }
+
+    // endregion
+
+
     //region General
     /* General methods */
 
@@ -285,34 +406,46 @@ public class BrowserStorage {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putString(key, value);
         editor.apply();
-        Logging.logd("Pref '" + key + "' saved with value '" + value + "'.");
+        logPref(key, value);
     }
 
     public void setPref(String key, boolean value) {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putBoolean(key, value);
         editor.apply();
-        Logging.logd("Pref '" + key + "' saved with value '" + value + "'.");
+        logPref(key, String.valueOf(value));
     }
 
     public void setPref(String key, int value) {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putInt(key, value);
         editor.apply();
-        Logging.logd("Pref '" + key + "' saved with value '" + value + "'.");
+        logPref(key, String.valueOf(value));
     }
 
     public void rmPref(String key) {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.remove(key);
         editor.apply();
-        Logging.logd("Pref '" + key + "' removed.");
+        logPrefRm(key);
     }
 
     public void clearPrefs() {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.clear();
         editor.apply();
+    }
+
+    protected void logPref(String msg) {
+        Logging.logd("Pref " + msg);
+    }
+
+    protected void logPref(String key, String value) {
+        logPref("'" + key + "' saved with value '" + value + "'.");
+    }
+
+    protected void logPrefRm(String key) {
+        logPref("'" + key + "' removed.");
     }
 
     /**
@@ -330,7 +463,10 @@ public class BrowserStorage {
                 adBlockEnPref       = "pref_adblock_enable",
                 saveLastSessionPref = "pref_last_session",
                 lastSessionPref     = "saved_last_session",
-                crashltcOptOutPref  = "pref_crashlytics_optout"
+                crashltcOptOutPref  = "pref_crashlytics_optout",
+                adBlockNetBehavPref = "pref_adblock_net_behavior",
+                adBlockWaitForPref  = "pref_adblock_wait_for_init",
+                adBlockWhitelstPref = "pref_adblock_whitelist"
                         ;
     }
 

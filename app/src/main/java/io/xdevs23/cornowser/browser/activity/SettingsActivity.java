@@ -34,9 +34,10 @@ public class SettingsActivity extends XquidCompatActivity {
 
         setSupportActionBar(toolbar);
 
-        BarColors.enableBarColoring(getWindow(), R.color.light_blue_800);
+        BarColors.enableBarColoring(getWindow(), R.color.settings_statusbar_background);
 
         try {
+            assert getSupportActionBar() != null;
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         } catch(Exception ex) { /* */ }

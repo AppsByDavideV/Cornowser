@@ -1,5 +1,6 @@
 package org.xdevs23.file;
 
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.xdevs23.debugutils.Logging;
@@ -142,5 +143,28 @@ public class FileUtils {
         while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
         in.close();
         out.close();
+    }
+
+    public static String saveBitmapAsImage(Bitmap bitmapImage, String path, String filename) {
+        File directory = new File(path);
+        directory.mkdirs();
+        File mypath = new File(directory, filename);
+
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(mypath);
+            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos);
+        } catch (Exception ex) {
+            StackTraceParser.logStackTrace(ex);
+        } finally {
+            try {
+                if (fos != null) {
+                    fos.close();
+                }
+            } catch(IOException ioex) {
+                StackTraceParser.logStackTrace(ioex);
+            }
+        }
+        return directory.getAbsolutePath();
     }
 }

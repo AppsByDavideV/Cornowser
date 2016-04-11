@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import org.xdevs23.android.content.res.AssetHelper;
 import org.xdevs23.debugutils.Logging;
+import org.xdevs23.debugutils.StackTraceParser;
 import org.xdevs23.net.http.HttpStatusCodeHelper;
 import org.xwalk.core.ClientCertRequest;
 import org.xwalk.core.XWalkHttpAuthHandler;
@@ -26,6 +27,7 @@ import io.xdevs23.cornowser.browser.R;
 import io.xdevs23.cornowser.browser.browser.modules.CornHandler;
 import io.xdevs23.cornowser.browser.browser.modules.WebThemeHelper;
 import io.xdevs23.cornowser.browser.browser.modules.adblock.AdBlockManager;
+import io.xdevs23.cornowser.browser.browser.modules.adblock.AdBlockParser;
 
 /**
  * A cool "resource client" for our crunchy view
@@ -55,9 +57,6 @@ public class CornResourceClient extends XWalkResourceClient {
                     ")"
     );
 
-    private boolean allowTinting = true;
-    private boolean loadingLessThanMin = true;
-
     private boolean triedIntentLoad = false;
 
 
@@ -78,7 +77,6 @@ public class CornResourceClient extends XWalkResourceClient {
         }
         checkIntentableUrl(url.toLowerCase());
         CornBrowser.resetOmniPositionState(true);
-        CornBrowser.resetBarColor();
         Logging.logd("Starting url loading '" + url + "'");
         return super.shouldOverrideUrlLoading(view, url);
     }
@@ -105,45 +103,54 @@ public class CornResourceClient extends XWalkResourceClient {
 
     @Override
     public void onLoadStarted(XWalkView view, String url) {
-        if(AdBlockManager.isAdBlockedHost(url)) {
-            Logging.logd("AdBlock: Blocked ad!");
-            return;
-        }
         super.onLoadStarted(view, url);
-        allowTinting = true;
-        CornBrowser.applyInsideOmniText(view.getUrl());
-        WebThemeHelper.tintNow(CrunchyWalkView.fromXWalkView(view));
-        CornBrowser.publicWebRender.drawWithColorMode();
+        if(CrunchyWalkView.fromXWalkView(view).currentProgress < 100) {
+            CornBrowser.applyInsideOmniText();
+            WebThemeHelper.tintNow();
+            CornBrowser.publicWebRender.drawWithColorMode();
+        }
     }
 
     @Override
     public void onLoadFinished(XWalkView view, String url) {
         Logging.logd("Web load finished " + url + " " + view.getUrl());
-        if(allowTinting)
-            WebThemeHelper.tintNow((CrunchyWalkView)view);
-        allowTinting = false;
         super.onLoadFinished(view, url);
-        CornBrowser.applyInsideOmniText(view.getUrl());
+        CornBrowser.applyInsideOmniText();
         currentWorkingUrl = view.getUrl();
         CornBrowser.publicWebRender.drawWithColorMode();
     }
 
     @Override
     public XWalkWebResourceResponse shouldInterceptLoadRequest(XWalkView view, XWalkWebResourceRequest request) {
-        if(AdBlockManager.isAdBlockedHost(request.getUrl().toString())
-                && CornBrowser.getBrowserStorage().isAdBlockEnabled())
-            return null;
         return super.shouldInterceptLoadRequest(view, request);
     }
 
     @Override
     public WebResourceResponse shouldInterceptLoadRequest(XWalkView view, String url) {
-        if(CrunchyWalkView.fromXWalkView(view).getUIClient().readyForBugfreeBrowsing
-                && CornBrowser.getBrowserStorage().isAdBlockEnabled()
-                && AdBlockManager.isAdBlockedHost(url)) {
-            Logging.logd("AdBlock: Ad blocked");
-            return new WebResourceResponse("text/plain", "UTF-8",
-                    new ByteArrayInputStream("".getBytes()));
+        try {
+            // This is to prevent lags in (youtube) videos
+            // Maybe indexOf is faster than contains, so we use that in
+            //noinspection IndexOfReplaceableByContains
+            if (url.indexOf("googlevideo.com/videoplayback") == -1 ||
+                    (CrunchyWalkView.fromXWalkView(view).getUrlDomainAlt().indexOf("youtube") == -1
+                            && url.indexOf("googlesyndication") == -1)) {
+                try {
+                    if (AdBlockParser.isHostListed(CrunchyWalkView.fromXWalkView(view).getUrlAlt(),
+                            CornBrowser.getBrowserStorage().getAdBlockWhitelist()))
+                        return super.shouldInterceptLoadRequest(view, url);
+                    if (CornBrowser.getBrowserStorage().isAdBlockEnabled()
+                            && AdBlockManager.isAdBlockedHost(url)) {
+                        Logging.logd("AdBlock: Ad blocked");
+                        return new WebResourceResponse("text/plain", "UTF-8",
+                                new ByteArrayInputStream("".getBytes()));
+                    }
+                } catch (Exception ex) {
+                    StackTraceParser.logStackTrace(ex);
+                }
+            }
+        } catch(RuntimeException ex) {
+            Logging.logd("XWALK: Seems that something was being executed on the wrong thread");
+            StackTraceParser.logStackTrace(ex);
         }
         return super.shouldInterceptLoadRequest(view, url);
     }
@@ -163,11 +170,9 @@ public class CornResourceClient extends XWalkResourceClient {
         super.onProgressChanged(view, percentage);
         Logging.logd("Actual loading progress: " + percentage);
         CrunchyWalkView.fromXWalkView(view).currentProgress = percentage;
-        CornBrowser.getWebProgressBar().setProgress((float) percentage * 0.01f);
-        if(loadingLessThanMin && percentage > 40) {
+        CornBrowser.updateWebProgress();
+        if(percentage > 40)
             CornBrowser.getOmniPtrLayout().setRefreshing(false);
-            loadingLessThanMin = false;
-        }
     }
 
     @Override

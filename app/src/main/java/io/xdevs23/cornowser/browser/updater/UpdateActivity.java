@@ -7,8 +7,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.Toolbar;
@@ -59,7 +59,7 @@ public class UpdateActivity extends XquidCompatActivity {
 
                     ;
 
-    private static int    latestVersionCode = 0;
+    private static int latestVersionCode = 0;
 
     private static TextView currentVersionTv, newVersionTv, changelogTitle, changelogTv;
     private static com.rey.material.widget.Button updaterButton;
@@ -142,7 +142,8 @@ public class UpdateActivity extends XquidCompatActivity {
 
 		
 		UpdateStatus.setStatus(UpdateStatus.downloading);
-		
+
+        updaterButton.setVisibility(View.INVISIBLE);
 		
 	    DownloadUtils.setProgressBar(R.id.updateProgressBar, staticContext);
 		
@@ -161,8 +162,7 @@ public class UpdateActivity extends XquidCompatActivity {
             String endR = "";
             Logging.logd("Update path is " + updatedApk);
 			if(enableRoot) endR = RootController.runCommand(
-                    "su -c \"am force-stop io.xdevs23.cornowser.browser\" && " +
-                            "su -c \"pm install -rdt " + updatedApk + "\" && " +
+                            "su -c \"pm install -r " + updatedApk + "\" && " +
                             "su -c \"am start -n io.xdevs23.cornowser.browser/.CornBrowser\" && " +
                             "su -c \"am start -n io.xdevs23.cornowser.browser/.updater.UpdateActivity\" && exit");
 			else startNRUpdateInstallation();
@@ -195,10 +195,11 @@ public class UpdateActivity extends XquidCompatActivity {
 	}
 
     protected void initVars() {
-        updatedApk = (getApplicationContext().getExternalCacheDir() + "/CBUpdate.apk")
+        updatedApk = (Environment.getExternalStorageDirectory() + "/Cornowser/CBUpdate.apk")
                 .replace("//", "/");
 
         updateBar = (ProgressView) findViewById(R.id.updateProgressBar);
+        assert updateBar != null;
         updateBar.setVisibility(View.VISIBLE);
 
         appversion = ConfigUtils.getVersionName(getApplicationContext());
@@ -216,13 +217,15 @@ public class UpdateActivity extends XquidCompatActivity {
     }
 
     protected void downloadStrings() throws PackageManager.NameNotFoundException {
+
         currentVersionTv.setText(String.format(getString(R.string.updater_prefix_actual_version),
                 getPackageManager().getPackageInfo(getPackageName(), 0).versionName));
 
+        String latestVersionCodeString = DownloadUtils.downloadString(UpdaterStorage.URL_VERSION_CODE);
 
-        latestVersionCode = Integer.parseInt(
-                DownloadUtils.downloadString(UpdaterStorage.URL_VERSION_CODE)
-        );
+        if(!latestVersionCodeString.isEmpty()) latestVersionCode = Integer.parseInt(
+                latestVersionCodeString
+        ); else Logging.logd("Version code was not downloaded correctly.");
 
         switch( Integer.parseInt(
                 String.valueOf(latestVersionCode)
@@ -286,7 +289,10 @@ public class UpdateActivity extends XquidCompatActivity {
 
             updaterButton.setVisibility(View.INVISIBLE);
 
-            AppCompatCheckBox rootCheckBox = (AppCompatCheckBox) findViewById(R.id.updaterEnableRootChk);
+            AppCompatCheckBox rootCheckBox =
+                    (AppCompatCheckBox) findViewById(R.id.updaterEnableRootChk);
+
+            assert rootCheckBox != null;
 
             rootCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -296,6 +302,7 @@ public class UpdateActivity extends XquidCompatActivity {
             });
 
             try {
+
                 downloadStrings();
 
                 initDwnStringsToViews();
@@ -326,7 +333,8 @@ public class UpdateActivity extends XquidCompatActivity {
         setSupportActionBar(toolbar);
 
         try {
-            BarColors.enableBarColoring(getWindow(), R.color.indigo_700);
+            BarColors.enableBarColoring(getWindow(), R.color.updater_statusbar_background);
+            assert getSupportActionBar() != null;
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         } catch(Exception ex) {/* */}
@@ -335,18 +343,18 @@ public class UpdateActivity extends XquidCompatActivity {
         staticContext = myContext;
 
         UpdateStatus.applyLanguages();
-		
-		
-		if(RootController.isSuInstalled() && RootController.isBusyboxInstalled()) {
 
-            if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+        final AppCompatCheckBox rootCheckBox =
+                (AppCompatCheckBox) findViewById(R.id.updaterEnableRootChk);
+        assert rootCheckBox != null;
+		if(RootController.isSuInstalled() && RootController.isBusyboxInstalled()) {
                 AlertDialog.Builder adB = new AlertDialog.Builder(staticContext);
                 adB.setTitle(getString(R.string.rootutils_root_detect_title))
                         .setMessage(getString(R.string.rootutils_root_detect_message))
                         .setPositiveButton(getString(R.string.answer_yes), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface d, int id) {
-                                AppCompatCheckBox rootCheckBox = (AppCompatCheckBox) findViewById(R.id.updaterEnableRootChk);
+
                                 if (RootController.requestRoot()) {
                                     enableRoot = true;
                                     rootCheckBox.setChecked(true);
@@ -362,12 +370,8 @@ public class UpdateActivity extends XquidCompatActivity {
                         })
                         .setNegativeButton(getString(R.string.answer_no), new DismissDialogButton());
                 adB.create().show();
-            } else {
-                Toast.makeText(getApplicationContext(), getString(R.string.root_toast_info_lollihigh),
-                        Toast.LENGTH_LONG).show();
-            }
 
-        }
+        } else rootCheckBox.setVisibility(View.INVISIBLE);
 
         init();
 	}

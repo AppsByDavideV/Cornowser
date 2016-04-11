@@ -9,6 +9,7 @@ import android.preference.SwitchPreference;
 import android.support.v7.widget.Toolbar;
 
 import org.xdevs23.android.app.XquidCompatActivity;
+import org.xdevs23.debugutils.Logging;
 import org.xdevs23.ui.utils.BarColors;
 
 import io.xdevs23.cornowser.browser.CornBrowser;
@@ -27,7 +28,7 @@ public class AdBlockSettings extends XquidCompatActivity {
 
         setSupportActionBar(toolbar);
 
-        BarColors.enableBarColoring(getWindow(), R.color.red_900);
+        BarColors.enableBarColoring(getWindow(), R.color.adblock_statusbar_background);
 
         try {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -80,7 +81,9 @@ public class AdBlockSettings extends XquidCompatActivity {
             AdBlockManager.setOnHostsUpdatedListener(new AdBlockManager.OnHostsUpdatedListener() {
                 @Override
                 public void onUpdateFinished() {
-                    dialog.dismiss();
+                    try { dialog.dismiss(); } catch(IllegalArgumentException ex) {
+                        Logging.logd("AdBlock update dialog cannot be dismissed. Skipped.");
+                    }
                 }
             });
             dialog.show();
@@ -99,6 +102,36 @@ public class AdBlockSettings extends XquidCompatActivity {
             });
         }
 
+        private void initAdBlockNetBehaviorPref() {
+            final SwitchPreference pref = (SwitchPreference) findPreference("adblock_network_behavior");
+
+            pref.setChecked(!CornBrowser.getBrowserStorage().getAdBlockNetBehavior());
+
+            pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    CornBrowser.getBrowserStorage().saveAdBlockNetBehavior(!(boolean)newValue);
+                    pref.setChecked((boolean)newValue);
+                    return false;
+                }
+            });
+        }
+
+        private void initAdBlockWaitForPref() {
+            final SwitchPreference pref = (SwitchPreference) findPreference("adblock_waitfor");
+
+            pref.setChecked(CornBrowser.getBrowserStorage().isWaitForAdBlockEnabled());
+
+            pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    CornBrowser.getBrowserStorage().saveWaitForAdBlock((boolean)newValue);
+                    pref.setChecked((boolean)newValue);
+                    return false;
+                }
+            });
+        }
+
         @Override
         public void onCreate(final Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -107,6 +140,8 @@ public class AdBlockSettings extends XquidCompatActivity {
 
             initAdBlockEnable();
             initDownloadHostsPref();
+            initAdBlockNetBehaviorPref();
+            initAdBlockWaitForPref();
         }
     }
 }

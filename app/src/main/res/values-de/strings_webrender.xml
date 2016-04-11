@@ -11,17 +11,15 @@
         \nMöchtest du die Webseite weiterhin laden?
     </string>
 
-    <!-- AdBlock section -->
+    <string name="webrender_longpress_dialog_open_newtab">In neuem Tab öffnen</string>
+    <string name="webrender_longpress_dialog_share_link">Link teilen</string>
+    <string name="webrender_longpress_dialog_share_image">Bild teilen</string>
+    <string name="webrender_longpress_dialog_copy_url">URL kopieren</string>
+    <string name="webrender_longpress_dialog_copy_text">Linktext kopieren</string>
+    <string name="webrender_longpress_dialog_save_image">Bild speichern</string>
+    <string name="webrender_longpress_dialog_link_dblpnt">Link: %s</string>
+    <string name="webrender_longpress_dialog_image_dblpnt">Bild: %s</string>
 
-    <string name="adblock_enable_title">Aktiviere AdBlock</string>
-    <string name="adblock_enable_summary">Um Werbung zu blockieren, aktiviere AdBlock.</string>
-
-    <string name="adblock_download_hosts_title">Host-Dateien herunterladen</string>
-    <string name="adblock_download_hosts_summary">
-        Lade die neuesten Host-Dateien herunter.
-        Dies wird automatisch bei jedem App-Start durchgeführt.
-    </string>
-
-    <string name="adblock_hosts_downloading">Hosts-Dateien werden heruntergeladen und verarbeitet...</string>
+    <string name="webrender_image_saved_message">Bild gespeichert</string>
 
 </resources>

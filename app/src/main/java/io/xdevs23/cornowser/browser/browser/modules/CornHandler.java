@@ -19,8 +19,12 @@ public class CornHandler {
     public enum CornRequests {
         loadWorkingUrl,
         setWebThemeColor,
-        startTemplateFilling
+        startTemplateFilling,
+        handleLongpressLink,
+        handleLongpressImage
     }
+
+    public static final String dblpntSplitter = "_|[[??!_!??]]|_";
 
     public static void handleRequest(String req, Activity activity,
                                      CrunchyWalkView view, String url,
@@ -28,9 +32,16 @@ public class CornHandler {
 
         Logging.logd("Handling request " + req);
 
-        String internalReq = req.split("://")[1];
+        String internalReq = req.split("://", 2)[1];
+
+        internalReq = internalReq.replace("::", dblpntSplitter);
 
         String reqParts[] = internalReq.split(":");
+
+        internalReq = internalReq.replace(dblpntSplitter, "::");
+
+        for( int i = 0; i < reqParts.length; i++)
+            reqParts[i] = reqParts[i].replace(dblpntSplitter, "::");
 
         String mainReq = reqParts[0];
 
@@ -58,6 +69,23 @@ public class CornHandler {
                     view.evaluateJavascript(HandlerStorage.currentTemplateContent, null);
                     HandlerStorage.currentTemplateContent = "";
                     break;
+                case handleLongpressLink:
+                    if(reqParams.length >= 2)
+                        view.onLongPress(
+                                reqParams[1].replace("::", ":"),
+                                reqParams[0].replace("::", ":"),
+                                false);
+                    break;
+                case handleLongpressImage:
+                    if(reqParams.length >= 1) {
+                        if(reqParams[1] == null || reqParams[1].isEmpty())
+                            reqParams[1] = " ";
+                        view.onLongPress(
+                                reqParams[0].replace("::", ":"),
+                                reqParams[1].replace("::", ":"),
+                                true);
+                    }
+                    break;
                 default: break;
             }
         } catch(Exception ex) {
@@ -70,6 +98,7 @@ public class CornHandler {
         view.evaluateJavascript(req, null);
     }
 
+    @Deprecated
     public static void evalJSAlt(CrunchyWalkView view, String req) {
         view.load("javascript:" + req);
     }

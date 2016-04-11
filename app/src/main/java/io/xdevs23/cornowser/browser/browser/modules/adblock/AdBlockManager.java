@@ -1,5 +1,7 @@
 package io.xdevs23.cornowser.browser.browser.modules.adblock;
 
+import android.os.Handler;
+
 import org.xdevs23.crypto.hashing.HashUtils;
 import org.xdevs23.debugutils.Logging;
 import org.xdevs23.debugutils.StackTraceParser;
@@ -31,6 +33,10 @@ public class AdBlockManager {
 
     private static OnHostsUpdatedListener hostsUpdatedListener = defaultHostsUpdatedListener;
 
+    private static boolean areHostsLoaded = false;
+
+    private static Handler handler = new Handler();
+
     private AdBlockManager() {
 
     }
@@ -40,7 +46,10 @@ public class AdBlockManager {
             Logging.logd("AdBlock: Starting initialization");
             Logging.logd("AdBlock: Hosts file is " + adBlockFile);
             loadHosts();
-            downloadHostsAsync();
+            if(CornBrowser.getBrowserStorage().getAdBlockNetBehavior()
+                    || NetUtils.isWifiConnected(CornBrowser.getContext()))
+                downloadHostsAsync();
+            else Logging.logd("Not updating hosts, wifi is activated.");
         } catch(Exception ex) {
             StackTraceParser.logStackTrace(ex);
         }
@@ -48,7 +57,9 @@ public class AdBlockManager {
 
     public static void loadHosts() {
         Logging.logd("AdBlock: Loading hosts...");
+        areHostsLoaded = false;
         hosts = FileUtils.readFileStringArray(adBlockFile);
+        areHostsLoaded = true;
         Logging.logd("AdBlock: All hosts loaded!");
     }
 
@@ -57,7 +68,6 @@ public class AdBlockManager {
             @Override
             public void run() {
                 downloadHosts();
-                loadHosts();
             }
         })).start();
     }
@@ -111,18 +121,28 @@ public class AdBlockManager {
 
         if (allowUpdate) {
             Logging.logd("AdBlock: Writing to file...");
-            FileUtils.writeFileString(adBlockFile, sb.toString()); // Write the merged host files to file
+            // Write the merged host files to one single file
+            FileUtils.writeFileString(adBlockFile, sb.toString());
         } else Logging.logd("AdBlock: File already up-to-date. No action is taken.");
 
         Logging.logd("AdBlock: Finished!");
-        hostsUpdatedListener.onUpdateFinished();
-        hostsUpdatedListener = defaultHostsUpdatedListener;
+        loadHosts();
+        Runnable onUpdateFinishedRunnable = new Runnable() {
+            @Override
+            public void run() {
+                hostsUpdatedListener.onUpdateFinished();
+                hostsUpdatedListener = defaultHostsUpdatedListener;
+            }
+        };
+        handler.post(onUpdateFinishedRunnable);
     }
 
     public static boolean isAdBlockedHost(String url) {
         if(!CornBrowser.getBrowserStorage().isAdBlockEnabled())             return false;
+        if(!areHostsLoaded)                                                 return false;
         if(hosts == null || hosts.length <= 1)                              return false;
         if(AdBlockParser.isHostListed(url, AdBlockConst.WHITELISTED_HOSTS)) return false;
+        if(AdBlockParser.isHostListed(url, AdBlockConst. PREDEFINED_HOSTS)) return true ;
         try {
             return AdBlockParser.isHostListed(url, hosts);
         } catch(Exception ex) {
@@ -137,8 +157,8 @@ public class AdBlockManager {
     }
 
 
-    public static interface OnHostsUpdatedListener {
-        public void onUpdateFinished();
+    public interface OnHostsUpdatedListener {
+        void onUpdateFinished();
     }
 
 }

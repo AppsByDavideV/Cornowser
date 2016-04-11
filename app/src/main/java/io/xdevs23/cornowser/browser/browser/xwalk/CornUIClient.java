@@ -36,7 +36,7 @@ public class CornUIClient extends XWalkUIClient {
     public boolean skipDCheck = false;
 
     // This is for controlling errors on start-up loading
-    protected boolean readyForBugfreeBrowsing = false;
+    public boolean readyForBugfreeBrowsing = false;
 
 
     public CornUIClient(XWalkView view) {
@@ -47,7 +47,7 @@ public class CornUIClient extends XWalkUIClient {
     public void onReceivedTitle(XWalkView view, String title) {
         Logging.logd("Web received title: " + title);
         super.onReceivedTitle(view, title);
-        WebThemeHelper.tintNow(CrunchyWalkView.fromXWalkView(view));
+        WebThemeHelper.tintNow();
         CornBrowser.getTabSwitcher().getCurrentTab().setTitle(title);
     }
 
@@ -59,7 +59,7 @@ public class CornUIClient extends XWalkUIClient {
         final Runnable tintNowRunnable = new Runnable() {
             @Override
             public void run() {
-                WebThemeHelper.tintNow(CrunchyWalkView.fromXWalkView(fView));
+                WebThemeHelper.tintNow();
             }
         };
         Thread downIcon = new Thread(new Runnable() {
@@ -203,6 +203,7 @@ public class CornUIClient extends XWalkUIClient {
 
     @Override
     public void onPageLoadStarted(XWalkView view, String url) {
+        CrunchyWalkView.fromXWalkView(view).currentUrl = url;
         CrunchyWalkView.fromXWalkView(view).favicon = null;
         CornBrowser.resetOmniPositionState(true);
         Logging.logd("Page load started for: " + url);
@@ -247,6 +248,7 @@ public class CornUIClient extends XWalkUIClient {
 
     @Override
     public void onPageLoadStopped(XWalkView view, String url, LoadStatus status) {
+        CrunchyWalkView.fromXWalkView(view).currentUrl = url;
         if( (status == LoadStatus.CANCELLED || status == LoadStatus.FAILED)
                 && (!readyForBugfreeBrowsing) && (!url.isEmpty()) )
             view.load(url, null);
@@ -258,6 +260,9 @@ public class CornUIClient extends XWalkUIClient {
             CornBrowser.getWebEngine().bringToFront();
             CornBrowser.omnibox.bringToFront();
             CornBrowser.getWebEngine().refreshDrawableState();
+            CornHandler.sendRawJSRequest(CrunchyWalkView.fromXWalkView(view),
+                    AssetHelper.getAssetString("appScripts/longPressHandler.js",
+                            CornBrowser.getContext()));
         }
 
         Logging.logd("Page load stopped");

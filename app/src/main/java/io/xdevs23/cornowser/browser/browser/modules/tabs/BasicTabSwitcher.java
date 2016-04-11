@@ -54,6 +54,7 @@ public abstract class BasicTabSwitcher extends ExtendedAndroidClass implements T
         tabStorage.addTab(tab);
         CornBrowser.publicWebRender = tab.webView;
         currentTab = tab.tabId;
+        if(!tab.tabUrl.isEmpty()) tab.webView.load(tab.tabUrl);
     }
 
     @Override
@@ -137,5 +138,7 @@ public abstract class BasicTabSwitcher extends ExtendedAndroidClass implements T
         }
         switchTab(currentTab);
     }
+
+    public abstract void updateAllTabs();
 
 }
