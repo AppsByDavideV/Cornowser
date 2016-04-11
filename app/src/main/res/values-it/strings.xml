@@ -7,20 +7,20 @@
 
     <!-- General stuff -->
 
-    <string name="answer_cancel">Cancel</string>
+    <string name="answer_cancel">Cancella</string>
     <string name="answer_ok">OK</string>
 
-    <string name="instr_next">Next</string>
-    <string name="instr_next_go">Next</string>
-    <string name="instr_prev">Previous</string>
-    <string name="instr_forward">Forward</string>
-    <string name="instr_backward">Backward</string>
+    <string name="instr_next">Prossimo</string>
+    <string name="instr_next_go">Prossimo</string>
+    <string name="instr_prev">Precedente</string>
+    <string name="instr_forward">Avanti</string>
+    <string name="instr_backward">Indietro</string>
 
-    <string name="instr_new">New</string>
+    <string name="instr_new">Nuovo</string>
 
-    <string name="instr_goto">Go to</string>
+    <string name="instr_goto">Vai a</string>
 
-    <string name="instr_opts">Options</string>
+    <string name="instr_opts">Opzioni</string>
 
     <string name="instr_add">Aggiungi</string>
     <string name="instr_remove">Rimuovi</string>
