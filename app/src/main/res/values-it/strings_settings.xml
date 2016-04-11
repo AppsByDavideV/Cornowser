@@ -5,6 +5,15 @@
 
     <string name="settings_browsing_homepage_title">Pagina iniziale</string>
     <string name="settings_browsing_homepage_summary">Imposta la tua pagina iniziale preferita</string>
+    
+    <string name="settings_browsing_searchengine_title">Motore di ricerca</string>
+    <string name="settings_browsing_searchengine_summary">Imposta il tuo motore di ricerca preferito</string>
+    
+    <string name="settings_browsing_adblock_title">AdBlock</string>
+    <string name="settings_browsing_adblock_summary">Accedi alle impostazioni per per il blocco della pubblicità</string>
+    
+    <string name="settings_browsing_lsession_title">Ripristina la sessione precedente</string>
+    <string name="settings_browsing_lsession_summary">Apri tutte le finestre della sessione precedente all'avvio</string>
 
 
     <string name="settings_category_layout_title">Aspetto</string>
@@ -17,6 +26,16 @@
 
 
     <string name="settings_category_misc_title">Varie</string>
+    
+    <string name="settings_misc_clean_data_title">Cancella i dati</string>
+    <string name="settings_misc_clean_data_summary">Usa questa funzionalità per cancellare i dati memorizzati</string>
+
+    <string name="settings_misc_debug_title">Modalità debug</string>
+     <string name="settings_misc_debug_summary">Abilita scrittura Logcat. (Potrebbe servirci per migliorare l'app)</string>
+     
+    <string name="settings_misc_optout_clytics_title">Disabilita Crashlytics</string>
+    <string name="settings_misc_optout_clytics_summary">Non inviare report automatici in caso di crash dell'app
+        (E' richiesto il riavvio dell'app)</string>
 
     <string name="settings_list_licenses_title">Licenze Open Source</string>
     <string name="settings_list_licenses_summary">Librerie utilissime utilizzate in questa app</string>
@@ -26,5 +45,25 @@
 
     <string name="settings_list_credits_spc_title">Ringraziamenti speciali</string>
     <string name="settings_list_credits_spc_summary">Ringrazio tantissimo tutte queste persone</string>
+    
+     <!-- Clean data settings page -->
+
+    <string name="cleandata_clean_cache_title">Cancella la cache</string>
+    <string name="cleandata_clean_cache_summary">Cancella dati navigazione memorizzati</string>
+
+    <string name="cleandata_clean_cookies_title">Elimina i cookies</string>
+    <string name="cleandata_clean_cookies_summary">Elimina i cookies memorizzati dai siti web</string>
+
+    <string name="cleandata_clean_all_nad_title">Cancella tutto</string>
+    <string name="cleandata_clean_all_nad_summary">Cancella tutti i dati della navigazione escluso le impostazioni dell\'app</string>
+
+    <string name="cleandata_clean_force_all_title">Elimina tutto e ripristina app</string>
+    <string name="cleandata_clean_force_all_summary">Cancella tutti i dati navigazione e le impostazioni dell\'app</string>
+
+    <string name="cleandata_clean_force_all_warn">
+        Questo cancellerà tutti i dati compreso cache, cookies, impostazioni, password e dati di autocompletamento!
+\n
+        \nSei sicuro di voler procedere??
+    </string>
 
 </resources>
