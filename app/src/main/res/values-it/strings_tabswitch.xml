@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="tabswitch_blue_longpress_to_remove">Premi a lungo su un tab per rimuoverlo</string>
+
+    <string name="tabswitch_no_removable_tabs">Tab non rimovibile</string>
+
+</resources>
